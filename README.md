@@ -8,6 +8,9 @@ A recruitment funnel analysis built on a dataset of 600 candidates across 8 sour
 
 ## Live Demo
 
+**Live Report:** https://sourcing-analysis-ai.vercel.app/
+**GitHub:** https://github.com/ogustavoveiga/sourcing-analysis-ai
+
 > Open `sourcing-dashboard.jsx` in [Claude Artifacts](https://claude.ai) or any React environment.
 > The AI Scorer tab calls the Claude API in real-time — no backend required.
 
