@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Gustavo\\\\Desktop\\\\Projeto\\\\sourcing-analysis-repo\" -Recurse)",
+      "Bash(Select-Object FullName)"
+    ]
+  }
+}

@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sourcing Analysis with AI — CloudWalk × Gustavo Veiga</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black:   #000000;
+    --void:    #050505;
+    --surface: #0a0a0a;
+    --card:    #111111;
+    --border:  #1c1c1c;
+    --border2: #252525;
+    --green:   #00ff85;
+    --green2:  #00cc6a;
+    --green3:  #00ff8520;
+    --white:   #f0f0f0;
+    --muted:   #555555;
+    --muted2:  #888888;
+    --red:     #ff3b5c;
+    --amber:   #ffb830;
+    --mono: 'Space Mono', monospace;
+    --display: 'Syne', sans-serif;
+    --body: 'DM Sans', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--void);
+    color: var(--white);
+    font-family: var(--body);
+    font-size: 15px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE TEXTURE ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── COVER ── */
+  .cover {
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    position: relative;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cover-bg {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 60% 30%, #00ff8508 0%, transparent 70%),
+                radial-gradient(ellipse 40% 40% at 10% 80%, #00ff8504 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .cover-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  .nav {
+    position: relative; z-index: 10;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 28px 60px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: var(--display);
+    font-weight: 800; font-size: 18px;
+    letter-spacing: -0.02em;
+    color: var(--white);
+  }
+
+  .nav-logo span { color: var(--green); }
+
+  .nav-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted2);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    border: 1px solid var(--border2);
+    padding: 6px 14px;
+    border-radius: 2px;
+  }
+
+  .cover-body {
+    position: relative; z-index: 10;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 80px 60px 60px;
+    max-width: 900px;
+  }
+
+  .cover-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    margin-bottom: 28px;
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  .cover-eyebrow::before {
+    content: '';
+    display: block;
+    width: 32px; height: 1px;
+    background: var(--green);
+  }
+
+  h1.cover-title {
+    font-family: var(--display);
+    font-size: clamp(52px, 8vw, 96px);
+    font-weight: 800;
+    line-height: 0.92;
+    letter-spacing: -0.04em;
+    color: var(--white);
+    margin-bottom: 32px;
+  }
+
+  h1.cover-title em {
+    font-style: normal;
+    color: var(--green);
+    display: block;
+  }
+
+  .cover-desc {
+    font-size: 17px;
+    color: var(--muted2);
+    max-width: 560px;
+    line-height: 1.7;
+    margin-bottom: 48px;
+  }
+
+  .cover-meta {
+    display: flex; gap: 0;
+    border: 1px solid var(--border2);
+    width: fit-content;
+  }
+
+  .meta-item {
+    padding: 16px 28px;
+    border-right: 1px solid var(--border2);
+  }
+  .meta-item:last-child { border-right: none; }
+
+  .meta-value {
+    font-family: var(--display);
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--green);
+    line-height: 1;
+  }
+
+  .meta-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 4px;
+  }
+
+  .cover-footer {
+    position: relative; z-index: 10;
+    padding: 24px 60px;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+
+  .author-line {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted2);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  .author-line strong { color: var(--green); }
+
+  /* ── SECTIONS ── */
+  .section {
+    padding: 80px 60px;
+    border-bottom: 1px solid var(--border);
+    position: relative; z-index: 1;
+  }
+
+  .section-header {
+    display: flex; align-items: flex-start; gap: 32px;
+    margin-bottom: 52px;
+  }
+
+  .section-number {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    padding-top: 8px;
+    white-space: nowrap;
+  }
+
+  .section-title {
+    font-family: var(--display);
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--white);
+  }
+
+  /* ── KPI GRID ── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border: 1px solid var(--border2);
+    margin-bottom: 48px;
+  }
+
+  .kpi-card {
+    padding: 28px 24px;
+    border-right: 1px solid var(--border2);
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card:last-child { border-right: none; }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--green);
+  }
+  .kpi-card.red::before { background: var(--red); }
+  .kpi-card.amber::before { background: var(--amber); }
+  .kpi-card.white::before { background: var(--white); }
+
+  .kpi-value {
+    font-family: var(--display);
+    font-size: 42px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: var(--green);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .kpi-card.red .kpi-value { color: var(--red); }
+  .kpi-card.amber .kpi-value { color: var(--amber); }
+  .kpi-card.white .kpi-value { color: var(--white); }
+
+  .kpi-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .kpi-sub {
+    font-size: 12px;
+    color: var(--muted2);
+    margin-top: 6px;
+  }
+
+  /* ── TABLES ── */
+  .table-wrap { overflow-x: auto; margin-bottom: 32px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+
+  thead th {
+    background: var(--card);
+    color: var(--muted2);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 10px;
+    font-weight: 400;
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  tbody tr:hover { background: var(--card); }
+
+  tbody td {
+    padding: 12px 16px;
+    color: var(--muted2);
+  }
+
+  tbody td.highlight { color: var(--green); font-weight: 700; }
+  tbody td.red-text { color: var(--red); font-weight: 700; }
+  tbody td.amber-text { color: var(--amber); }
+  tbody td.white-text { color: var(--white); }
+
+  /* ── FUNNEL BARS ── */
+  .funnel { display: flex; flex-direction: column; gap: 8px; margin-bottom: 48px; }
+
+  .funnel-row {
+    display: grid;
+    grid-template-columns: 120px 1fr 80px;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .funnel-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted2);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-align: right;
+  }
+
+  .funnel-track {
+    height: 28px;
+    background: var(--card);
+    border: 1px solid var(--border2);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .funnel-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green) 0%, var(--green2) 100%);
+    position: relative;
+    transition: width 1s cubic-bezier(.4,0,.2,1);
+  }
+
+  .funnel-fill.dim { background: linear-gradient(90deg, #1a3a2a 0%, #1a4530 100%); }
+  .funnel-fill.accent { background: linear-gradient(90deg, var(--green) 0%, #00ffff 100%); }
+
+  .funnel-pct {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--green);
+    font-weight: 700;
+  }
+
+  /* ── BAR CHART ── */
+  .bar-chart { display: flex; flex-direction: column; gap: 12px; margin-bottom: 40px; }
+
+  .bar-row {
+    display: grid;
+    grid-template-columns: 160px 1fr 60px;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .bar-name {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted2);
+    text-align: right;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .bar-track {
+    height: 20px;
+    background: var(--card);
+    border: 1px solid var(--border2);
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    background: var(--green);
+    transition: width 1s ease;
+  }
+  .bar-fill.bad { background: var(--red); }
+  .bar-fill.mid { background: var(--amber); }
+
+  .bar-val {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--green);
+  }
+  .bar-val.bad { color: var(--red); }
+  .bar-val.mid { color: var(--amber); }
+
+  /* ── CALLOUT ── */
+  .callout {
+    border: 1px solid var(--border2);
+    border-left: 3px solid var(--green);
+    padding: 20px 24px;
+    margin: 24px 0;
+    background: var(--green3);
+  }
+  .callout.red { border-left-color: var(--red); background: rgba(255,59,92,0.05); }
+  .callout.amber { border-left-color: var(--amber); background: rgba(255,184,48,0.05); }
+
+  .callout-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--green);
+    margin-bottom: 8px;
+  }
+  .callout.red .callout-title { color: var(--red); }
+  .callout.amber .callout-title { color: var(--amber); }
+
+  .callout p { color: var(--muted2); font-size: 14px; line-height: 1.6; }
+  .callout strong { color: var(--white); }
+
+  /* ── TWO COL ── */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-bottom: 40px;
+  }
+
+  /* ── SIGNAL CARDS ── */
+  .signal-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1px;
+    background: var(--border2);
+    border: 1px solid var(--border2);
+    margin-bottom: 40px;
+  }
+
+  .signal-card {
+    background: var(--card);
+    padding: 28px 24px;
+  }
+
+  .signal-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .signal-value {
+    font-family: var(--display);
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--green);
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .signal-desc { font-size: 13px; color: var(--muted2); }
+
+  /* ── RECOMMENDATIONS ── */
+  .rec-list { display: flex; flex-direction: column; gap: 0; }
+
+  .rec-item {
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    border-bottom: 1px solid var(--border);
+    padding: 32px 0;
+  }
+  .rec-item:first-child { border-top: 1px solid var(--border); }
+
+  .rec-num {
+    font-family: var(--mono);
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--border2);
+    line-height: 1;
+  }
+
+  .rec-content { padding-left: 8px; }
+
+  .rec-title {
+    font-family: var(--display);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+
+  .rec-data {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
+  }
+
+  .rec-body { font-size: 14px; color: var(--muted2); line-height: 1.7; }
+  .rec-body strong { color: var(--white); }
+
+  .rec-impact {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 4px 12px;
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--green);
+    border: 1px solid var(--green);
+    background: var(--green3);
+  }
+
+  /* ── AI SECTION ── */
+  .ai-highlight {
+    border: 1px solid var(--green);
+    padding: 40px;
+    position: relative;
+    margin-bottom: 40px;
+    background: var(--green3);
+  }
+
+  .ai-badge {
+    position: absolute;
+    top: -1px; right: 40px;
+    background: var(--green);
+    color: var(--black);
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    padding: 4px 12px;
+    font-weight: 700;
+  }
+
+  .ai-highlight h3 {
+    font-family: var(--display);
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--white);
+    margin-bottom: 16px;
+    letter-spacing: -0.02em;
+  }
+
+  .ai-highlight p { color: var(--muted2); font-size: 14px; line-height: 1.8; }
+  .ai-highlight strong { color: var(--green); }
+
+  /* ── SCORE COMPARISON ── */
+  .score-compare { display: flex; flex-direction: column; gap: 20px; }
+
+  .score-row-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted2);
+    margin-bottom: 8px;
+    display: flex; justify-content: space-between;
+  }
+
+  .score-track {
+    height: 6px;
+    background: var(--card);
+    border: 1px solid var(--border2);
+    margin-bottom: 4px;
+    overflow: hidden;
+  }
+
+  .score-fill { height: 100%; transition: width 1s ease; }
+  .score-fill.hired { background: var(--green); }
+  .score-fill.not-hired { background: var(--border2); border: 1px solid var(--muted); }
+
+  /* ── PROFILE BOX ── */
+  .profile-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border2);
+    border: 1px solid var(--border2);
+    margin-top: 40px;
+  }
+
+  .profile-col {
+    background: var(--card);
+    padding: 28px 24px;
+  }
+
+  .profile-col-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border2);
+  }
+  .profile-col-title.green { color: var(--green); }
+  .profile-col-title.red { color: var(--red); }
+
+  .profile-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--muted2);
+  }
+
+  .profile-arrow { flex-shrink: 0; font-size: 10px; margin-top: 3px; }
+  .profile-arrow.green { color: var(--green); }
+  .profile-arrow.red { color: var(--red); }
+
+  /* ── APPROACH / AI PAGE ── */
+  .approach-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border2);
+    border: 1px solid var(--border2);
+    margin-bottom: 40px;
+  }
+
+  .approach-card {
+    background: var(--card);
+    padding: 28px 24px;
+  }
+
+  .approach-num {
+    font-family: var(--mono);
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--border2);
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+
+  .approach-title {
+    font-family: var(--display);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 10px;
+  }
+
+  .approach-body { font-size: 13px; color: var(--muted2); line-height: 1.6; }
+
+  /* ── FOOTER ── */
+  .doc-footer {
+    padding: 40px 60px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-top: 1px solid var(--border);
+  }
+
+  .footer-left {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .footer-left strong { color: var(--green); }
+
+  .footer-right {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.8;
+  }
+
+  /* ── DIVIDER ── */
+  .slash-divider {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    padding: 16px 60px;
+    border-bottom: 1px solid var(--border);
+    background: var(--black);
+  }
+
+  @media (max-width: 900px) {
+    .nav, .section, .cover-body, .cover-footer, .doc-footer { padding-left: 24px; padding-right: 24px; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .two-col, .signal-grid, .profile-grid, .approach-grid { grid-template-columns: 1fr; }
+    h1.cover-title { font-size: 48px; }
+  }
+
+  @media print {
+    body { background: white; color: black; }
+    .cover-bg, .cover-grid, body::before { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     COVER
+═══════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-bg"></div>
+  <div class="cover-grid"></div>
+
+  <nav class="nav">
+    <div class="nav-logo">CLOUDWALK <span>AI</span></div>
+    <div class="nav-tag">Technical Challenge — Talent Acquisition</div>
+  </nav>
+
+  <div class="cover-body">
+    <div class="cover-eyebrow">Sourcing Analysis with AI</div>
+    <h1 class="cover-title">
+      Recruitment
+      <em>Intelligence</em>
+    </h1>
+    <p class="cover-desc">
+      A data-driven analysis of 600 candidates across 8 source channels and 6 recruiters — with a live AI candidate scoring engine embedded in the deliverable.
+    </p>
+    <div class="cover-meta">
+      <div class="meta-item">
+        <div class="meta-value">600</div>
+        <div class="meta-label">Candidates</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-value">8</div>
+        <div class="meta-label">Channels</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-value">6</div>
+        <div class="meta-label">Recruiters</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-value">8%</div>
+        <div class="meta-label">Hire Rate</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cover-footer">
+    <div class="author-line">Submitted by <strong>Gustavo Veiga</strong> — Talent Acquisition Specialist</div>
+    <div class="author-line">AI powered by <strong>Claude Sonnet</strong> · Anthropic API · 2026</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLASH DIVIDER
+═══════════════════════════════════════════════ -->
+<div class="slash-divider">// 01. Approach &nbsp;&nbsp;// 02. Use of AI &nbsp;&nbsp;// 03. Key Insights &nbsp;&nbsp;// 04. Recommendations</div>
+
+<!-- ══════════════════════════════════════════════
+     SECTION 1 — APPROACH
+═══════════════════════════════════════════════ -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-number">01 //</div>
+    <h2 class="section-title">Approach</h2>
+  </div>
+
+  <div class="approach-grid">
+    <div class="approach-card">
+      <div class="approach-num">01</div>
+      <div class="approach-title">Funnel Conversion</div>
+      <div class="approach-body">Stage-by-stage drop-off analysis to locate the primary bottleneck. Measured both stage-to-stage and sourced-to-stage conversion simultaneously to capture compounding loss effects.</div>
+    </div>
+    <div class="approach-card">
+      <div class="approach-num">02</div>
+      <div class="approach-title">Channel Efficiency</div>
+      <div class="approach-body">Hire rate and no-response rate combined per channel. A channel with good hire rate but 40% ghost rate tells a different story than raw conversion alone.</div>
+    </div>
+    <div class="approach-card">
+      <div class="approach-num">03</div>
+      <div class="approach-title">Recruiter Benchmarking</div>
+      <div class="approach-body">Individual performance crossed with best-performing channel. The goal: is this a capability gap or a channel assignment problem?</div>
+    </div>
+    <div class="approach-card">
+      <div class="approach-num">04</div>
+      <div class="approach-title">Predictive Signals</div>
+      <div class="approach-body">Response time buckets, score averages, seniority, work mode, and department — identifying which attributes predict hire before the offer stage.</div>
+    </div>
+    <div class="approach-card">
+      <div class="approach-num">05</div>
+      <div class="approach-title">Rejection Patterns</div>
+      <div class="approach-body">Categorizing drop-off causes into engagement-driven, quality-driven, process-driven, and candidate-driven — to distinguish systemic from individual problems.</div>
+    </div>
+    <div class="approach-card">
+      <div class="approach-num">06</div>
+      <div class="approach-title">Data Cleaning</div>
+      <div class="approach-body">601 rows received. Candidate ID 601 had response_time_days = −3 (impossible value, data entry error). Removed. Final clean dataset: <strong style="color:var(--green)">600 candidates</strong>.</div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Layer</th>
+          <th>Tool</th>
+          <th>Purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="white-text">Data Analysis</td><td class="highlight">Claude Sonnet (prompts)</td><td>All conversion rates, cross-tabs, segment breakdowns</td></tr>
+        <tr><td class="white-text">Insight Generation</td><td class="highlight">Claude Sonnet</td><td>Pattern interpretation → recruiter-facing recommendations</td></tr>
+        <tr><td class="white-text">Live AI Scoring</td><td class="highlight">Anthropic API</td><td>Real-time candidate evaluation embedded in dashboard</td></tr>
+        <tr><td class="white-text">Dashboard</td><td>React + Recharts</td><td>Interactive visualization — 5 analytical tabs</td></tr>
+        <tr><td class="white-text">Repository</td><td>GitHub</td><td>Prompt documentation, outputs, source code</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SECTION 2 — USE OF AI
+═══════════════════════════════════════════════ -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-number">02 //</div>
+    <h2 class="section-title">Use of AI</h2>
+  </div>
+
+  <div class="ai-highlight">
+    <div class="ai-badge">Live · Claude API</div>
+    <h3>AI Candidate Scorer — Primary Differentiator</h3>
+    <p>
+      The dashboard's AI Scorer tab calls <strong>claude-sonnet-4-20250514</strong> in real time. A recruiter inputs a candidate profile — channel, seniority, scores, response time — and Claude reasons against the actual dataset patterns to return: a <strong>hire probability (High / Medium / Low)</strong>, a 0–100 confidence score, the <strong>top 3 contributing factors</strong> with positive/negative impact labels, a single actionable recruiter recommendation, and a <strong>persist / deprioritize flag</strong> with a one-sentence justification.
+    </p>
+    <p style="margin-top:12px">
+      This is not a rule-based system. Every evaluation is grounded in the real dataset statistics injected into the prompt — hired candidate score averages, channel hire rates, response time benchmarks — making it a calibrated tool, not a generic AI opinion.
+    </p>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="callout">
+        <div class="callout-title">// AI as Analyst</div>
+        <p>All quantitative analysis was performed via structured Claude prompts — no Python scripts. <strong>8 prompts total</strong>, each documented with exact wording and design rationale in the GitHub /prompts folder. Every prompt was designed for a specific output, not a general summary.</p>
+      </div>
+    </div>
+    <div>
+      <div class="callout">
+        <div class="callout-title">// AI as Insight Interpreter</div>
+        <p>A dedicated recommendation prompt required each output to include: the specific action, the data point that justifies it, the expected impact, and the responsible owner. This prevents <strong>generic advice</strong> — every recommendation is anchored to a real number.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SECTION 3 — KEY INSIGHTS
+═══════════════════════════════════════════════ -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-number">03 //</div>
+    <h2 class="section-title">Key Insights</h2>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-value">8.0%</div>
+      <div class="kpi-label">Overall Hire Rate</div>
+      <div class="kpi-sub">48 of 600 sourced</div>
+    </div>
+    <div class="kpi-card white">
+      <div class="kpi-value">68.0%</div>
+      <div class="kpi-label">Response Rate</div>
+      <div class="kpi-sub">408 responded</div>
+    </div>
+    <div class="kpi-card amber">
+      <div class="kpi-value">30.5%</div>
+      <div class="kpi-label">Test → Offer Conv.</div>
+      <div class="kpi-sub">Steepest bottleneck</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">78.7%</div>
+      <div class="kpi-label">Offer Acceptance</div>
+      <div class="kpi-sub">Closing is not the problem</div>
+    </div>
+  </div>
+
+  <!-- FUNNEL -->
+  <h3 style="font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.15em;color:var(--muted2);margin-bottom:20px;">// Recruitment Funnel</h3>
+  <div class="funnel">
+    <div class="funnel-row">
+      <div class="funnel-label">Sourced</div>
+      <div class="funnel-track"><div class="funnel-fill" style="width:100%"></div></div>
+      <div class="funnel-pct">600</div>
+    </div>
+    <div class="funnel-row">
+      <div class="funnel-label">Responded</div>
+      <div class="funnel-track"><div class="funnel-fill" style="width:68%"></div></div>
+      <div class="funnel-pct">68%</div>
+    </div>
+    <div class="funnel-row">
+      <div class="funnel-label">Screening</div>
+      <div class="funnel-track"><div class="funnel-fill" style="width:51.2%"></div></div>
+      <div class="funnel-pct">51%</div>
+    </div>
+    <div class="funnel-row">
+      <div class="funnel-label">Interview</div>
+      <div class="funnel-track"><div class="funnel-fill" style="width:38.8%"></div></div>
+      <div class="funnel-pct">39%</div>
+    </div>
+    <div class="funnel-row">
+      <div class="funnel-label">Test</div>
+      <div class="funnel-track"><div class="funnel-fill" style="width:33.3%"></div></div>
+      <div class="funnel-pct">33%</div>
+    </div>
+    <div class="funnel-row">
+      <div class="funnel-label">Offer</div>
+      <div class="funnel-track"><div class="funnel-fill dim" style="width:10.2%"></div></div>
+      <div class="funnel-pct" style="color:var(--amber)">10%</div>
+    </div>
+    <div class="funnel-row">
+      <div class="funnel-label">Hired</div>
+      <div class="funnel-track"><div class="funnel-fill accent" style="width:8%"></div></div>
+      <div class="funnel-pct">8%</div>
+    </div>
+  </div>
+
+  <div class="callout red">
+    <div class="callout-title">⚠ Primary Bottleneck — Test → Offer (30.5%)</div>
+    <p>Only <strong>61 of 200</strong> candidates who completed the test received an offer — a 69.5% drop. The offer acceptance rate (78.7%) is strong, meaning the problem is not candidate reluctance. It is qualification criteria or recruiter bandwidth at the offer stage.</p>
+  </div>
+
+  <!-- CHANNELS -->
+  <h3 style="font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.15em;color:var(--muted2);margin:40px 0 20px;">// Channel Performance — Hire Rate</h3>
+  <div class="two-col">
+    <div>
+      <div class="bar-chart">
+        <div class="bar-row"><div class="bar-name">Github</div><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><div class="bar-val">11.0%</div></div>
+        <div class="bar-row"><div class="bar-name">Inbound</div><div class="bar-track"><div class="bar-fill" style="width:91.8%"></div></div><div class="bar-val">10.1%</div></div>
+        <div class="bar-row"><div class="bar-name">Hunting</div><div class="bar-track"><div class="bar-fill" style="width:84.5%"></div></div><div class="bar-val">9.3%</div></div>
+        <div class="bar-row"><div class="bar-name">Banco Talentos</div><div class="bar-track"><div class="bar-fill" style="width:80%"></div></div><div class="bar-val">8.8%</div></div>
+        <div class="bar-row"><div class="bar-name">LinkedIn</div><div class="bar-track"><div class="bar-fill" style="width:78.2%"></div></div><div class="bar-val">8.6%</div></div>
+        <div class="bar-row"><div class="bar-name">Comunidade</div><div class="bar-track"><div class="bar-fill mid" style="width:71.8%"></div></div><div class="bar-val mid">7.9%</div></div>
+        <div class="bar-row"><div class="bar-name">Evento</div><div class="bar-track"><div class="bar-fill bad" style="width:44.5%"></div></div><div class="bar-val bad">4.9%</div></div>
+        <div class="bar-row"><div class="bar-name">Indicação</div><div class="bar-track"><div class="bar-fill bad" style="width:29%"></div></div><div class="bar-val bad">3.2%</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Channel</th><th>Hire %</th><th>Ghost %</th></tr></thead>
+          <tbody>
+            <tr><td class="white-text">Github</td><td class="highlight">11.0%</td><td>31.5%</td></tr>
+            <tr><td class="white-text">Inbound</td><td class="highlight">10.1%</td><td class="highlight">20.3%</td></tr>
+            <tr><td>Hunting</td><td>9.3%</td><td class="amber-text">36.0%</td></tr>
+            <tr><td>Banco Talentos</td><td>8.8%</td><td>25.0%</td></tr>
+            <tr><td>LinkedIn</td><td>8.6%</td><td class="amber-text">37.0%</td></tr>
+            <tr><td>Comunidade</td><td>7.9%</td><td>32.6%</td></tr>
+            <tr><td>Evento</td><td class="amber-text">4.9%</td><td>32.9%</td></tr>
+            <tr><td>Indicação</td><td class="red-text">3.2%</td><td class="red-text">39.7%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout" style="margin-top:16px">
+        <div class="callout-title">// Inbound = Highest ROI</div>
+        <p><strong>Top-2 hire rate (10.1%) + lowest ghost rate (20.3%)</strong>. Candidates who apply proactively are both more likely to respond AND be hired. Best ROI channel in the dataset.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECRUITERS -->
+  <h3 style="font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.15em;color:var(--muted2);margin:40px 0 20px;">// Recruiter Performance</h3>
+  <div class="table-wrap" style="margin-bottom:24px">
+    <table>
+      <thead><tr><th>Recruiter</th><th>Total</th><th>Hired</th><th>Hire Rate</th><th>Best Channel</th></tr></thead>
+      <tbody>
+        <tr><td class="white-text">Bruno</td><td>98</td><td>15</td><td class="highlight">15.3%</td><td>Banco de Talentos (28.6%)</td></tr>
+        <tr><td class="white-text">Ana</td><td>75</td><td>10</td><td class="highlight">13.3%</td><td>Hunting (22.2%)</td></tr>
+        <tr><td>Carla</td><td>100</td><td>8</td><td>8.0%</td><td>Banco de Talentos (18.2%)</td></tr>
+        <tr><td>Gustavo</td><td>121</td><td>6</td><td class="amber-text">5.0%</td><td>Github (14.3%)</td></tr>
+        <tr><td>Diego</td><td>103</td><td>5</td><td class="amber-text">4.9%</td><td>Hunting (11.8%)</td></tr>
+        <tr><td>Fernanda</td><td>103</td><td>4</td><td class="red-text">3.9%</td><td>Hunting (8.3%)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout amber">
+    <div class="callout-title">// 3.9× Performance Gap — Channel Allocation Problem</div>
+    <p>Bruno (15.3%) vs Fernanda (3.9%) — but <strong>every recruiter converts 2× better in their best channel vs their overall rate</strong>. This is not a talent gap. It is a channel assignment problem that can be fixed without new headcount.</p>
+  </div>
+
+  <!-- SIGNALS -->
+  <h3 style="font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.15em;color:var(--muted2);margin:40px 0 20px;">// Hiring Signals</h3>
+  <div class="signal-grid">
+    <div class="signal-card">
+      <div class="signal-label">Optimal Response Window</div>
+      <div class="signal-value">3–6d</div>
+      <div class="signal-desc">15.3% hire rate — 53% higher than fast responders (10.1%). Deliberate candidates outperform impulsive ones.</div>
+    </div>
+    <div class="signal-card">
+      <div class="signal-label">Avg Technical Score — Hired</div>
+      <div class="signal-value">81.6</div>
+      <div class="signal-desc">vs 72.9 not hired. Consistent 8.7pt gap across all three assessments.</div>
+    </div>
+    <div class="signal-card">
+      <div class="signal-label">Top Seniority — Hire Rate</div>
+      <div class="signal-value">13.3%</div>
+      <div class="signal-desc">Staff level. Junior converts at only 4.6% — a 2.9× gap from the top.</div>
+    </div>
+    <div class="signal-card">
+      <div class="signal-label">Híbrido vs Remoto</div>
+      <div class="signal-value">2.4×</div>
+      <div class="signal-desc">Híbrido (10.8%) converts 2.4× better than Remoto (4.5%). Work mode is a real predictor.</div>
+    </div>
+  </div>
+
+  <!-- SCORE COMPARISON -->
+  <h3 style="font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.15em;color:var(--muted2);margin:40px 0 20px;">// Score Gap — Hired vs Not Hired</h3>
+  <div class="score-compare">
+    <div>
+      <div class="score-row-label"><span>Technical Score</span><span style="color:var(--green)">81.6 <span style="color:var(--muted)">hired</span> &nbsp; 72.9 <span style="color:var(--muted)">not hired</span></span></div>
+      <div class="score-track"><div class="score-fill hired" style="width:81.6%"></div></div>
+      <div class="score-track"><div class="score-fill not-hired" style="width:72.9%"></div></div>
+    </div>
+    <div>
+      <div class="score-row-label"><span>Behavior Score</span><span style="color:var(--green)">81.6 <span style="color:var(--muted)">hired</span> &nbsp; 74.0 <span style="color:var(--muted)">not hired</span></span></div>
+      <div class="score-track"><div class="score-fill hired" style="width:81.6%"></div></div>
+      <div class="score-track"><div class="score-fill not-hired" style="width:74%"></div></div>
+    </div>
+    <div>
+      <div class="score-row-label"><span>Manager Score</span><span style="color:var(--green)">80.4 <span style="color:var(--muted)">hired</span> &nbsp; 73.1 <span style="color:var(--muted)">not hired</span></span></div>
+      <div class="score-track"><div class="score-fill hired" style="width:80.4%"></div></div>
+      <div class="score-track"><div class="score-fill not-hired" style="width:73.1%"></div></div>
+    </div>
+  </div>
+
+  <!-- REJECTION -->
+  <h3 style="font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.15em;color:var(--muted2);margin:40px 0 20px;">// Rejection Breakdown</h3>
+  <div class="bar-chart">
+    <div class="bar-row"><div class="bar-name" style="font-size:10px">No Response</div><div class="bar-track"><div class="bar-fill bad" style="width:100%"></div></div><div class="bar-val bad">210 (56%)</div></div>
+    <div class="bar-row"><div class="bar-name" style="font-size:10px">Failed Test</div><div class="bar-track"><div class="bar-fill mid" style="width:11.9%"></div></div><div class="bar-val mid">25 (6.7%)</div></div>
+    <div class="bar-row"><div class="bar-name" style="font-size:10px">Timing Mismatch</div><div class="bar-track"><div class="bar-fill mid" style="width:11.4%"></div></div><div class="bar-val mid">24 (6.4%)</div></div>
+    <div class="bar-row"><div class="bar-name" style="font-size:10px">Low Tech Fit</div><div class="bar-track"><div class="bar-fill mid" style="width:10.9%"></div></div><div class="bar-val mid">23 (6.1%)</div></div>
+    <div class="bar-row"><div class="bar-name" style="font-size:10px">Low Engagement</div><div class="bar-track"><div class="bar-fill mid" style="width:10.9%"></div></div><div class="bar-val mid">23 (6.1%)</div></div>
+  </div>
+  <div class="callout red">
+    <div class="callout-title">// This is an Outreach Problem, Not a Candidate Quality Problem</div>
+    <p><strong>62% of all rejections are engagement-driven</strong> (no response + low engagement). More candidates are lost before entering the process than are lost to failing any assessment. The lever is outreach quality, not screening criteria.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SECTION 4 — RECOMMENDATIONS
+═══════════════════════════════════════════════ -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-number">04 //</div>
+    <h2 class="section-title">Recommendations</h2>
+  </div>
+
+  <div class="rec-list">
+    <div class="rec-item">
+      <div class="rec-num">01</div>
+      <div class="rec-content">
+        <div class="rec-title">Fix Outreach Quality Before Adding Volume</div>
+        <div class="rec-data">// Data: 210 no-response rejections = 56% of all rejections</div>
+        <div class="rec-body">Audit and rewrite outreach messages for LinkedIn (37% ghost rate), Hunting (36%), and Indicação (40%). Implement a <strong>2-follow-up / 10-day rule</strong>: archive candidates who do not respond. Track no-response rate as a primary KPI alongside hire rate.</div>
+        <div class="rec-impact">Expected: +30 active candidates/cycle from 15% response improvement</div>
+      </div>
+    </div>
+    <div class="rec-item">
+      <div class="rec-num">02</div>
+      <div class="rec-content">
+        <div class="rec-title">Realign Recruiters to Their Best Channels</div>
+        <div class="rec-data">// Data: Every recruiter converts 2× better in their best channel vs overall</div>
+        <div class="rec-body">Assign <strong>Fernanda → Hunting</strong> (8.3% vs 3.9%). Assign <strong>Diego → Hunting</strong> (11.8% vs 4.9%). Focus <strong>Gustavo → Github</strong> (14.3% vs 5.0%). Keep Bruno on Banco de Talentos (already his strongest channel at 28.6%).</div>
+        <div class="rec-impact">Expected: Team hire rate from 8% → ~11% without new headcount</div>
+      </div>
+    </div>
+    <div class="rec-item">
+      <div class="rec-num">03</div>
+      <div class="rec-content">
+        <div class="rec-title">Fast-Track Medium-Response Candidates</div>
+        <div class="rec-data">// Data: 3–6 day responders convert at 15.3% — 53% above fast responders</div>
+        <div class="rec-body">Flag candidates responding in 3–6 days for same-day internal review. Measure <strong>time-from-candidate-response-to-recruiter-next-step</strong> weekly. These are your highest-intent candidates — treat them accordingly.</div>
+        <div class="rec-impact">Expected: Improved recruiter efficiency without changing headcount</div>
+      </div>
+    </div>
+    <div class="rec-item">
+      <div class="rec-num">04</div>
+      <div class="rec-content">
+        <div class="rec-title">Set Score Thresholds Before Generating Offers</div>
+        <div class="rec-data">// Data: Hired avg 81.6 on all assessments — not-hired avg 72.9</div>
+        <div class="rec-body">Use <strong>Technical ≥ 78 and Behavior ≥ 78 as soft thresholds</strong> before advancing to offer. This directly addresses the Test → Offer bottleneck (30.5%), the steepest cliff in the entire pipeline.</div>
+        <div class="rec-impact">Expected: Fewer wasted offers, higher per-offer conversion rate</div>
+      </div>
+    </div>
+    <div class="rec-item">
+      <div class="rec-num">05</div>
+      <div class="rec-content">
+        <div class="rec-title">Redirect Budget From Low-ROI Channels</div>
+        <div class="rec-data">// Data: Evento (4.9%) + Indicação (3.2%) = 145 candidates, 6 hires</div>
+        <div class="rec-body">The same 145 sourcing slots applied to Github or Inbound would yield an estimated <strong>14–16 additional hires</strong> — more than double. Reduce Evento participation. Rethink Indicação: referrals need pre-screening before entering the pipeline.</div>
+        <div class="rec-impact">Expected: 2× hires from reallocated sourcing effort</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFILE COMPOSITE -->
+  <h3 style="font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.15em;color:var(--muted2);margin:48px 0 20px;">// Composite Candidate Profiles</h3>
+  <div class="profile-grid">
+    <div class="profile-col">
+      <div class="profile-col-title green">✓ Persist — High Signal Profile</div>
+      <div class="profile-item"><span class="profile-arrow green">→</span>Sourced via Github or Inbound</div>
+      <div class="profile-item"><span class="profile-arrow green">→</span>Senior or Staff seniority</div>
+      <div class="profile-item"><span class="profile-arrow green">→</span>Tech or Data department</div>
+      <div class="profile-item"><span class="profile-arrow green">→</span>Híbrido work mode</div>
+      <div class="profile-item"><span class="profile-arrow green">→</span>Response in 3–6 days</div>
+      <div class="profile-item"><span class="profile-arrow green">→</span>Technical score ≥ 78</div>
+      <div class="profile-item"><span class="profile-arrow green">→</span>Behavior score ≥ 78</div>
+      <div class="profile-item"><span class="profile-arrow green">→</span>6+ years of experience</div>
+    </div>
+    <div class="profile-col">
+      <div class="profile-col-title red">✗ Deprioritize — Low Signal Profile</div>
+      <div class="profile-item"><span class="profile-arrow red">→</span>Sourced via Indicação or Evento</div>
+      <div class="profile-item"><span class="profile-arrow red">→</span>Junior seniority</div>
+      <div class="profile-item"><span class="profile-arrow red">→</span>Operations department</div>
+      <div class="profile-item"><span class="profile-arrow red">→</span>Remote-only preference</div>
+      <div class="profile-item"><span class="profile-arrow red">→</span>Response after 7+ days</div>
+      <div class="profile-item"><span class="profile-arrow red">→</span>Technical score below 73</div>
+      <div class="profile-item"><span class="profile-arrow red">→</span>No response after 2 follow-ups</div>
+      <div class="profile-item"><span class="profile-arrow red">→</span>Below 5 years of experience</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════════ -->
+<footer class="doc-footer">
+  <div class="footer-left">
+    Submitted by <strong>Gustavo Veiga</strong> &nbsp;·&nbsp; Talent Acquisition Specialist<br>
+    Technical Challenge — CloudWalk · 2026
+  </div>
+  <div class="footer-right">
+    AI powered by Claude Sonnet · Anthropic API<br>
+    Dataset: 600 candidates · 8 channels · 6 recruiters · 35 variables<br>
+    github.com/[ogustavoveiga/sourcing-analysis-ai] · sourcing-analysis-ai
+  </div>
+</footer>
+
+</body>
+</html>
